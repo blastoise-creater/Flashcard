@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard App</title>
+    <style>
+        /* CSS for a modern, responsive flashcard application */
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --accent-color: #FFC107;
+            --bg-color: #f0f2f5;
+            --card-front-bg: #fff;
+            --card-back-bg: #333;
+            --text-dark: #2c3e50;
+            --text-light: #ecf0f1;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: var(--text-dark);
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: var(--text-dark);
+            margin-bottom: 20px;
+        }
+
+        /* Flashcard Container and Flip Animation */
+        .flashcard-container {
+            width: 100%;
+            perspective: 1000px;
+            height: 250px;
+            margin-bottom: 25px;
+        }
+
+        .flashcard {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s ease-in-out;
+            transform-style: preserve-3d;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4em;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .flashcard-front {
+            background-color: var(--card-front-bg);
+            color: var(--text-dark);
+        }
+
+        .flashcard-back {
+            background-color: var(--card-back-bg);
+            color: var(--text-light);
+            transform: rotateY(180deg);
+        }
+
+        /* Navigation Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 25px;
+        }
+
+        .controls button {
+            padding: 12px 20px;
+            font-size: 1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            background-color: var(--secondary-color);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .controls #deleteBtn {
+            background-color: #e74c3c;
+        }
+
+        .controls #deleteBtn:hover {
+            background-color: #c0392b;
+        }
+
+        #cardCount {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        /* Add Card Section */
+        .add-card-section {
+            width: 100%;
+            background-color: var(--card-front-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .add-card-section h2 {
+            margin: 0 0 5px 0;
+            color: var(--primary-color);
+        }
+
+        .add-card-section textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .add-card-section button {
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .add-card-section button:hover {
+            background-color: #43a047;
+            transform: translateY(-2px);
+        }
+
+        /* Delete Confirmation Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background-color: var(--card-front-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 350px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal p {
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        #confirmDeleteBtn {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        #cancelDeleteBtn {
+            background-color: #bdc3c7;
+            color: var(--text-dark);
+        }
+        
+        #confirmDeleteBtn:hover, #cancelDeleteBtn:hover {
+             transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>My Flashcard Deck</h1>
+
+        <!-- The Flashcard Display Area -->
+        <div class="flashcard-container">
+            <div id="flashcard" class="flashcard">
+                <div id="flashcard-front" class="flashcard-face flashcard-front">
+                    Click to flip!
+                </div>
+                <div id="flashcard-back" class="flashcard-face flashcard-back">
+                    Add your first card below.
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation and Card Count Controls -->
+        <div class="controls">
+            <button id="prevBtn" aria-label="Previous Card">Prev</button>
+            <span id="cardCount">0/0</span>
+            <button id="nextBtn" aria-label="Next Card">Next</button>
+            <button id="deleteBtn" aria-label="Delete Current Card">Delete</button>
+        </div>
+
+        <!-- Section to Add New Cards -->
+        <div class="add-card-section">
+            <h2>Add New Flashcard</h2>
+            <textarea id="frontInput" placeholder="Enter the front side of the card (e.g., 'Capital of France')"></textarea>
+            <textarea id="backInput" placeholder="Enter the back side of the card (e.g., 'Paris')"></textarea>
+            <button id="addCardBtn">Add Card</button>
+        </div>
+    </div>
+
+    <!-- Custom Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal">
+            <p>Are you sure you want to delete this flashcard?</p>
+            <div class="modal-buttons">
+                <button id="confirmDeleteBtn">Delete</button>
+                <button id="cancelDeleteBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- JavaScript for the Flashcard Application ---
+
+        // 1. DOM Element References
+        const flashcard = document.getElementById('flashcard');
+        const flashcardFront = document.getElementById('flashcard-front');
+        const flashcardBack = document.getElementById('flashcard-back');
+        const frontInput = document.getElementById('frontInput');
+        const backInput = document.getElementById('backInput');
+        const addCardBtn = document.getElementById('addCardBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const deleteBtn = document.getElementById('deleteBtn');
+        const cardCountSpan = document.getElementById('cardCount');
+        const deleteModal = document.getElementById('deleteModal');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+
+        // 2. State Variables
+        let flashcards = [];
+        let currentCardIndex = 0;
+
+        // 3. Core Functions for Data and UI
+        
+        /**
+         * Saves the current flashcards array to local storage.
+         * The data is converted to a JSON string for storage.
+         */
+        function saveFlashcards() {
+            try {
+                localStorage.setItem('flashcards', JSON.stringify(flashcards));
+            } catch (e) {
+                console.error("Failed to save flashcards to local storage:", e);
+                // Handle potential quota exceeded errors gracefully
+            }
+        }
+
+        /**
+         * Loads flashcards from local storage and initializes the app state.
+         * If no cards are found, it shows a default message.
+         */
+        function loadFlashcards() {
+            try {
+                const savedCards = localStorage.getItem('flashcards');
+                if (savedCards) {
+                    flashcards = JSON.parse(savedCards);
+                    if (flashcards.length > 0) {
+                        currentCardIndex = 0;
+                        displayCard();
+                    } else {
+                        displayEmptyCard();
+                    }
+                } else {
+                    displayEmptyCard();
+                }
+            } catch (e) {
+                console.error("Failed to load flashcards from local storage:", e);
+                flashcards = [];
+                displayEmptyCard();
+            }
+            updateCardCount();
+        }
+
+        /**
+         * Renders the current flashcard's content on the screen.
+         * Resets the flip state.
+         */
+        function displayCard() {
+            if (flashcards.length > 0) {
+                const card = flashcards[currentCardIndex];
+                flashcardFront.textContent = card.front;
+                flashcardBack.textContent = card.back;
+                flashcard.classList.remove('is-flipped');
+            }
+            updateCardCount();
+        }
+
+        /**
+         * Displays the initial state when no flashcards exist.
+         */
+        function displayEmptyCard() {
+            flashcardFront.textContent = "No cards created yet.";
+            flashcardBack.textContent = "Add your first card below!";
+            flashcard.classList.remove('is-flipped');
+            updateCardCount();
+        }
+
+        /**
+         * Updates the card count display (e.g., "1/5").
+         */
+        function updateCardCount() {
+            const count = flashcards.length;
+            const current = count > 0 ? currentCardIndex + 1 : 0;
+            cardCountSpan.textContent = `${current}/${count}`;
+        }
+
+        // 4. User Interaction Handlers
+
+        /**
+         * Adds a new flashcard from the input fields.
+         */
+        function handleAddCard() {
+            const frontText = frontInput.value.trim();
+            const backText = backInput.value.trim();
+
+            if (!frontText || !backText) {
+                // Using a custom modal or just a text message would be better, but
+                // a simple alert is fine for this example.
+                const message = "Please enter text for both sides of the card.";
+                alert(message);
+                return;
+            }
+
+            flashcards.push({ front: frontText, back: backText });
+            saveFlashcards();
+            currentCardIndex = flashcards.length - 1;
+            displayCard();
+            frontInput.value = '';
+            backInput.value = '';
+        }
+
+        /**
+         * Navigates to the next flashcard in the deck.
+         */
+        function handleNextCard() {
+            if (flashcards.length > 1) {
+                currentCardIndex = (currentCardIndex + 1) % flashcards.length;
+                displayCard();
+            }
+        }
+
+        /**
+         * Navigates to the previous flashcard in the deck.
+         */
+        function handlePrevCard() {
+            if (flashcards.length > 1) {
+                currentCardIndex = (currentCardIndex - 1 + flashcards.length) % flashcards.length;
+                displayCard();
+            }
+        }
+
+        /**
+         * Shows the delete confirmation modal.
+         */
+        function handleDeleteConfirmation() {
+            if (flashcards.length === 0) {
+                const message = "No cards to delete!";
+                alert(message);
+                return;
+            }
+            deleteModal.style.display = 'flex';
+            setTimeout(() => deleteModal.classList.add('active'), 10);
+        }
+
+        /**
+         * Deletes the current flashcard.
+         */
+        function handleDeleteCard() {
+            // Close the modal first
+            deleteModal.classList.remove('active');
+            setTimeout(() => deleteModal.style.display = 'none', 300);
+
+            // Perform deletion logic
+            flashcards.splice(currentCardIndex, 1);
+            saveFlashcards();
+
+            if (flashcards.length === 0) {
+                currentCardIndex = 0;
+                displayEmptyCard();
+            } else {
+                // Stay on the same "relative" card, or go back if at the end
+                currentCardIndex = Math.min(currentCardIndex, flashcards.length - 1);
+                displayCard();
+            }
+        }
+
+        // 5. Event Listeners
+        flashcard.addEventListener('click', () => {
+            if (flashcards.length > 0) {
+                flashcard.classList.toggle('is-flipped');
+            }
+        });
+        addCardBtn.addEventListener('click', handleAddCard);
+        nextBtn.addEventListener('click', handleNextCard);
+        prevBtn.addEventListener('click', handlePrevCard);
+        deleteBtn.addEventListener('click', handleDeleteConfirmation);
+        confirmDeleteBtn.addEventListener('click', handleDeleteCard);
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteModal.classList.remove('active');
+            setTimeout(() => deleteModal.style.display = 'none', 300);
+        });
+
+        // 6. Initial Setup
+        window.addEventListener('load', loadFlashcards);
+    </script>
+</body>
+  </html>
